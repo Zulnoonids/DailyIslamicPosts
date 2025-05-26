@@ -1,0 +1,23 @@
+name: Post to Facebook
+
+on:
+  workflow_dispatch: # allows you to run it manually from the Actions tab
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Read today's post from file
+        id: get_post
+        run: |
+          POST=$(node fetch-sheet.js)
+          echo "POST=$POST" >> $GITHUB_ENV
+
+      - name: Post to Facebook
+        run: |
+          curl -X POST "https://graph.facebook.com/me/feed" \
+          -F "message=$POST" \
+          -F "access_token=${{ secrets.FB_PAGE_TOKEN }}"
