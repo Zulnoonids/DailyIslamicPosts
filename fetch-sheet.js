@@ -10,15 +10,20 @@ https.get(sheetUrl, (res) => {
   });
 
   res.on('end', () => {
-    const rows = data.split('\n').slice(1); // skip header
+    const rows = data.trim().split('\n').slice(1); // skip header
     const today = new Date().toISOString().split('T')[0];
 
     const todayPost = rows.find(row => row.startsWith(today));
 
     if (todayPost) {
       const [date, caption, arabic, urdu] = todayPost.split(',');
-
       const fullPost = `${caption}\n\n${arabic}\n\n${urdu}`;
       console.log(fullPost);
     } else {
-      console.lo
+      console.log('No post for today');
+    }
+  });
+
+}).on('error', (err) => {
+  console.error('Error fetching Google Sheet:', err.message);
+});
