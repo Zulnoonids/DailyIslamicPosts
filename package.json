@@ -1,0 +1,7 @@
+{
+  "name": "daily-facebook-poster",
+  "version": "1.0.0",
+  "main": "fetch-sheet.js",
+  "type": "module",
+  "dependencies": {}
+}
