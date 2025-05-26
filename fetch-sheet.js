@@ -1,34 +1,59 @@
-async function loadCSV() {
-  const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vR_TbE5jib4eA9eleJYOFvlP6fXBHwsJm7XUB_EnQA13ir04voxdgVYz_t_ZB3H2zcwAxLGod3sWDJN/pub?output=csv');
-  const data = await response.text();
-  const rows = data.split('\n').slice(1); // skip header
+// URL of your public CSV Google Sheet
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_TbE5jib4eA9eleJYOFvlP6fXBHwsJm7XUB_EnQA13ir04voxdgVYz_t_ZB3H2zcwAxLGod3sWDJN/pub?output=csv';
 
-  const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-  let found = false;
-  let html = '';
-
-  rows.forEach(row => {
-    const cols = row.split(',');
-    const rowDate = cols[0]?.trim();
-
-    if (rowDate === today) {
-      found = true;
-      html += `
-        <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-          <strong>Date:</strong> ${cols[0]}<br>
-          <strong>English:</strong> ${cols[1]}<br>
-          <strong>Urdu:</strong> ${cols[2]}<br>
-          <strong>Reference:</strong> ${cols[3]}<br>
-          <strong>Hashtags:</strong> ${cols[4]}<br>
-        </div>`;
-    }
+// Function to parse CSV text into array of objects
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    let obj = {};
+    headers.forEach((header, i) => {
+      obj[header.trim()] = values[i]?.trim();
+    });
+    return obj;
   });
-
-  if (!found) {
-    html = "<div>No post for today found.</div>";
-  }
-
-  document.getElementById('content').innerHTML = html;
 }
 
-loadCSV();
+// Function to format date to YYYY-MM-DD (for matching)
+function formatDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
+// Main function to fetch data and display today's post
+async function showTodaysPost() {
+  try {
+    const response = await fetch(SHEET_CSV_URL);
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
+
+    const todayStr = formatDate(new Date());
+
+    // Find the row with Date === todayStr
+    const todaysPost = rows.find(row => row.Date === todayStr);
+
+    const container = document.getElementById('post-container');
+
+    if (!container) {
+      console.error('No element with id "post-container" found in HTML.');
+      return;
+    }
+
+    if (todaysPost) {
+      container.innerHTML = `
+        <h2>📅 Post for ${todaysPost.Date}</h2>
+        <p><strong>English:</strong> ${todaysPost['English Caption']}</p>
+        <p><strong>اردو:</strong> ${todaysPost['Urdu Caption']}</p>
+        <p><em>Reference:</em> ${todaysPost.Reference}</p>
+        <p><small>Hashtags: ${todaysPost.Hashtags}</small></p>
+      `;
+    } else {
+      container.innerHTML = `<p>No post found for today (${todayStr}). Please add one in the sheet.</p>`;
+    }
+  } catch (error) {
+    console.error('Error fetching or processing sheet:', error);
+  }
+}
+
+// Run on page load
+window.onload = showTodaysPost;
