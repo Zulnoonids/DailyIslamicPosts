@@ -1,35 +1,46 @@
 name: Post to Facebook
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # Runs every hour
+  workflow_dispatch:     # Allows you to run it manually
 
 jobs:
-  post:
+  post-to-facebook:
     runs-on: ubuntu-latest
+
+    env:
+      FB_PAGE_ID: 226428187567462
+      FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
-      - name: Install required package
-        run: npm install csv-parse
+      - name: Install dependencies
+        run: npm install
 
-      - name: Read today's post from Google Sheet
-        id: get_post
+      - name: Fetch today’s post from Google Sheet
+        id: fetch_post
         run: |
-          POST=$(node fetch-sheet.js)
-          echo "$POST"
-          echo "POST<<EOF" >> $GITHUB_ENV
-          echo "$POST" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          node fetch-sheet.js > post.txt
+          POST=$(cat post.txt)
+          echo "POST=$POST" >> $GITHUB_ENV
+
+      - name: Check if there is a post
+        run: |
+          if [ "$POST" == "No post for today" ]; then
+            echo "🛑 No post for today, skipping."
+            exit 0
+          fi
 
       - name: Post to Facebook Page
         run: |
-          curl -X POST "https://graph.facebook.com/226428187567462/feed" \
-
-            -F "message=$POST" \
-            -F "access_token=${{ secrets.FB_PAGE_TOKEN }}"
+          curl -X POST "https://graph.facebook.com/${{ env.FB_PAGE_ID }}/feed" \
+            -F "message=${POST}" \
+            -F "access_token=${{ env.FB_PAGE_TOKEN }}"
