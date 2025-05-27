@@ -28,7 +28,7 @@ jobs:
 
       - name: Fetch today’s post from Google Sheet
         run: |
-          node fetch-sheet.js > post.txt
+          node fetch-sheet.cjs > post.txt
           echo "POST=$(cat post.txt)" >> $GITHUB_ENV
 
       - name: Post to Facebook
